@@ -1,28 +1,23 @@
 -- ============================================================
 -- Moral Mirror v2
--- Analysis-first views (participant-centric, id columns at end)
+-- Analysis views (participant-centric, id columns at end)
+-- Exported from the database used in the study. Run after schema.sql.
+-- trial_no numbers the sessions of each participant in start order.
 -- ============================================================
 
 BEGIN;
 
--- NOTE:
--- analysis_phase_messages was re-shaped to include flow_order/phase_order.
--- DROP first to avoid "cannot change name of view column" errors on CREATE OR REPLACE.
+-- Drop dependent views first so column changes do not fail on CREATE OR REPLACE.
 DROP VIEW IF EXISTS public.analysis_phase_messages_flow;
 DROP VIEW IF EXISTS public.analysis_phase_messages;
 
 CREATE OR REPLACE VIEW public.analysis_experiment_sessions AS
 WITH ranked_sessions AS (
-  SELECT
-    es.*,
-    DENSE_RANK() OVER (
-      PARTITION BY es.participant_id
-      ORDER BY es.started_at, es.created_at, es.id
-    ) AS trial_no
+  SELECT es.id, es.participant_id, es.started_at, es.completed_at, es.total_duration_ms, es.is_completed, es.created_at,
+    dense_rank() OVER (PARTITION BY es.participant_id ORDER BY es.started_at, es.created_at, es.id) AS trial_no
   FROM public.experiment_sessions es
 )
-SELECT
-  participant_id,
+SELECT participant_id,
   trial_no,
   started_at,
   completed_at,
@@ -34,16 +29,11 @@ FROM ranked_sessions;
 
 CREATE OR REPLACE VIEW public.analysis_scenario_responses AS
 WITH ranked_sessions AS (
-  SELECT
-    es.*,
-    DENSE_RANK() OVER (
-      PARTITION BY es.participant_id
-      ORDER BY es.started_at, es.created_at, es.id
-    ) AS trial_no
+  SELECT es.id, es.participant_id, es.started_at, es.completed_at, es.total_duration_ms, es.is_completed, es.created_at,
+    dense_rank() OVER (PARTITION BY es.participant_id ORDER BY es.started_at, es.created_at, es.id) AS trial_no
   FROM public.experiment_sessions es
 )
-SELECT
-  rs.participant_id,
+SELECT rs.participant_id,
   rs.trial_no,
   sr.scenario_id,
   sr.initial_choice,
@@ -69,19 +59,35 @@ SELECT
 FROM public.scenario_responses sr
 JOIN ranked_sessions rs ON rs.id = sr.session_id;
 
+CREATE OR REPLACE VIEW public.analysis_scenario_choices AS
+WITH ranked_sessions AS (
+  SELECT es.id, es.participant_id, es.started_at, es.completed_at, es.total_duration_ms, es.is_completed, es.created_at,
+    dense_rank() OVER (PARTITION BY es.participant_id ORDER BY es.started_at, es.created_at, es.id) AS trial_no
+  FROM public.experiment_sessions es
+)
+SELECT rs.participant_id,
+  rs.trial_no,
+  sr.scenario_id,
+  sr.initial_choice,
+  sr.final_choice,
+  (sr.initial_choice IS DISTINCT FROM sr.final_choice) AS changed_choice,
+  sr.initial_reasoning,
+  sr.self_rebuttal,
+  sr.final_reflection,
+  sr.completed_at,
+  sr.id AS scenario_response_id
+FROM public.scenario_responses sr
+JOIN ranked_sessions rs ON rs.id = sr.session_id
+ORDER BY rs.participant_id, rs.trial_no, sr.scenario_id, sr.completed_at;
+
 CREATE OR REPLACE VIEW public.analysis_phase_messages AS
 WITH ranked_sessions AS (
-  SELECT
-    es.*,
-    DENSE_RANK() OVER (
-      PARTITION BY es.participant_id
-      ORDER BY es.started_at, es.created_at, es.id
-    ) AS trial_no
+  SELECT es.id, es.participant_id, es.started_at, es.completed_at, es.total_duration_ms, es.is_completed, es.created_at,
+    dense_rank() OVER (PARTITION BY es.participant_id ORDER BY es.started_at, es.created_at, es.id) AS trial_no
   FROM public.experiment_sessions es
 ),
 phase_messages_with_order AS (
-  SELECT
-    rs.participant_id,
+  SELECT rs.participant_id,
     rs.trial_no,
     sr.scenario_id,
     CASE pm.phase
@@ -102,28 +108,23 @@ phase_messages_with_order AS (
   JOIN public.scenario_responses sr ON sr.id = pm.scenario_response_id
   JOIN ranked_sessions rs ON rs.id = sr.session_id
 )
-SELECT
-  pmo.participant_id,
-  pmo.trial_no,
-  pmo.scenario_id,
-  ROW_NUMBER() OVER (
-    PARTITION BY pmo.participant_id, pmo.trial_no, pmo.scenario_id
-    ORDER BY pmo.phase_order, pmo.message_order, pmo.created_at, pmo.id
-  ) AS flow_order,
-  pmo.phase_order,
-  pmo.phase,
-  pmo.role,
-  pmo.message_order,
-  pmo.content,
-  pmo.response_time_ms,
-  pmo.created_at,
-  pmo.scenario_response_id,
-  pmo.id
+SELECT participant_id,
+  trial_no,
+  scenario_id,
+  row_number() OVER (PARTITION BY participant_id, trial_no, scenario_id ORDER BY phase_order, message_order, created_at, id) AS flow_order,
+  phase_order,
+  phase,
+  role,
+  message_order,
+  content,
+  response_time_ms,
+  created_at,
+  scenario_response_id,
+  id
 FROM phase_messages_with_order pmo;
 
 CREATE OR REPLACE VIEW public.analysis_phase_messages_flow AS
-SELECT
-  participant_id,
+SELECT participant_id,
   trial_no,
   scenario_id,
   flow_order,
@@ -141,16 +142,11 @@ ORDER BY participant_id, trial_no, scenario_id, flow_order;
 
 CREATE OR REPLACE VIEW public.analysis_extracted_arguments AS
 WITH ranked_sessions AS (
-  SELECT
-    es.*,
-    DENSE_RANK() OVER (
-      PARTITION BY es.participant_id
-      ORDER BY es.started_at, es.created_at, es.id
-    ) AS trial_no
+  SELECT es.id, es.participant_id, es.started_at, es.completed_at, es.total_duration_ms, es.is_completed, es.created_at,
+    dense_rank() OVER (PARTITION BY es.participant_id ORDER BY es.started_at, es.created_at, es.id) AS trial_no
   FROM public.experiment_sessions es
 )
-SELECT
-  rs.participant_id,
+SELECT rs.participant_id,
   rs.trial_no,
   sr.scenario_id,
   ea.argument_index,
@@ -164,16 +160,11 @@ JOIN ranked_sessions rs ON rs.id = sr.session_id;
 
 CREATE OR REPLACE VIEW public.analysis_ethics_scores AS
 WITH ranked_sessions AS (
-  SELECT
-    es.*,
-    DENSE_RANK() OVER (
-      PARTITION BY es.participant_id
-      ORDER BY es.started_at, es.created_at, es.id
-    ) AS trial_no
-  FROM public.experiment_sessions es
+  SELECT es_1.id, es_1.participant_id, es_1.started_at, es_1.completed_at, es_1.total_duration_ms, es_1.is_completed, es_1.created_at,
+    dense_rank() OVER (PARTITION BY es_1.participant_id ORDER BY es_1.started_at, es_1.created_at, es_1.id) AS trial_no
+  FROM public.experiment_sessions es_1
 )
-SELECT
-  rs.participant_id,
+SELECT rs.participant_id,
   rs.trial_no,
   sr.scenario_id,
   es.frame,
@@ -189,16 +180,11 @@ JOIN ranked_sessions rs ON rs.id = sr.session_id;
 
 CREATE OR REPLACE VIEW public.analysis_probe_metrics AS
 WITH ranked_sessions AS (
-  SELECT
-    es.*,
-    DENSE_RANK() OVER (
-      PARTITION BY es.participant_id
-      ORDER BY es.started_at, es.created_at, es.id
-    ) AS trial_no
+  SELECT es.id, es.participant_id, es.started_at, es.completed_at, es.total_duration_ms, es.is_completed, es.created_at,
+    dense_rank() OVER (PARTITION BY es.participant_id ORDER BY es.started_at, es.created_at, es.id) AS trial_no
   FROM public.experiment_sessions es
 )
-SELECT
-  rs.participant_id,
+SELECT rs.participant_id,
   rs.trial_no,
   sr.scenario_id,
   pm.probe_breadth,
@@ -225,16 +211,11 @@ JOIN ranked_sessions rs ON rs.id = sr.session_id;
 
 CREATE OR REPLACE VIEW public.analysis_probe_thought_units AS
 WITH ranked_sessions AS (
-  SELECT
-    es.*,
-    DENSE_RANK() OVER (
-      PARTITION BY es.participant_id
-      ORDER BY es.started_at, es.created_at, es.id
-    ) AS trial_no
+  SELECT es.id, es.participant_id, es.started_at, es.completed_at, es.total_duration_ms, es.is_completed, es.created_at,
+    dense_rank() OVER (PARTITION BY es.participant_id ORDER BY es.started_at, es.created_at, es.id) AS trial_no
   FROM public.experiment_sessions es
 )
-SELECT
-  rs.participant_id,
+SELECT rs.participant_id,
   rs.trial_no,
   sr.scenario_id,
   ptu.source,
@@ -250,31 +231,5 @@ SELECT
 FROM public.probe_thought_units ptu
 JOIN public.scenario_responses sr ON sr.id = ptu.scenario_response_id
 JOIN ranked_sessions rs ON rs.id = sr.session_id;
-
-CREATE OR REPLACE VIEW public.analysis_scenario_choices AS
-WITH ranked_sessions AS (
-  SELECT
-    es.*,
-    DENSE_RANK() OVER (
-      PARTITION BY es.participant_id
-      ORDER BY es.started_at, es.created_at, es.id
-    ) AS trial_no
-  FROM public.experiment_sessions es
-)
-SELECT
-  rs.participant_id,
-  rs.trial_no,
-  sr.scenario_id,
-  sr.initial_choice,
-  sr.final_choice,
-  (sr.initial_choice IS DISTINCT FROM sr.final_choice) AS changed_choice,
-  sr.initial_reasoning,
-  sr.self_rebuttal,
-  sr.final_reflection,
-  sr.completed_at,
-  sr.id AS scenario_response_id
-FROM public.scenario_responses sr
-JOIN ranked_sessions rs ON rs.id = sr.session_id
-ORDER BY rs.participant_id, rs.trial_no, sr.scenario_id, sr.completed_at;
 
 COMMIT;

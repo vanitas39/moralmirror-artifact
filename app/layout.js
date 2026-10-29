@@ -6,10 +6,10 @@ export const metadata = {
   manifest: "/site.webmanifest",
   icons: {
     icon: [
-      { url: "/images/switch.png", type: "image/png" },
+      { url: "/images/logo.png", type: "image/png" },
     ],
-    shortcut: ["/images/switch.png"],
-    apple: ["/images/switch.png"],
+    shortcut: ["/images/logo.png"],
+    apple: ["/images/logo.png"],
   },
 };
 
