@@ -4,7 +4,7 @@ import { useState, useEffect, useCallback } from "react";
 import { createClient } from "@/lib/supabase";
 import { Plus, ToggleLeft, ToggleRight, RefreshCw } from "lucide-react";
 
-const CONDITIONS = ["B", "C"];
+const CONDITIONS = ["A", "B"];
 const SCENARIO_ORDERS = ["1-2-3", "1-3-2", "2-1-3", "2-3-1", "3-1-2", "3-2-1"];
 const TARGET_PER_SLOT = 3;
 
@@ -33,7 +33,7 @@ function getTestSlotOverride(participantId = "") {
   const n = Number(match[1]);
   if (!Number.isFinite(n) || n < 1 || n > 12) return null;
   return {
-    condition: n <= 6 ? "B" : "C",
+    condition: n <= 6 ? "A" : "B",
     scenario_order: SCENARIO_ORDERS[(n - 1) % SCENARIO_ORDERS.length],
   };
 }
@@ -62,10 +62,10 @@ function pickBalancedSlot(participants, participantId) {
   const counts = buildSlotCounts(participants);
   const fixedOrder = getMainBlockOrderOverride(participantId);
   if (fixedOrder) {
+    const aCount = counts[`A|${fixedOrder}`] ?? 0;
     const bCount = counts[`B|${fixedOrder}`] ?? 0;
-    const cCount = counts[`C|${fixedOrder}`] ?? 0;
     return {
-      condition: bCount <= cCount ? "B" : "C",
+      condition: aCount <= bCount ? "A" : "B",
       scenario_order: fixedOrder,
     };
   }
@@ -188,11 +188,11 @@ export default function AdminPage() {
           순서 현황: {slotStatusText}
         </div>
         <div className="mb-6 rounded-lg border border-amber-100 bg-amber-50 px-4 py-3 text-xs text-amber-800">
-          테스트 ID 빠른 매핑: t01~t06 = 조건 B 순서 6개, t07~t12 = 조건 C 순서 6개
+          테스트 ID 빠른 매핑: t01~t06 = 조건 A 순서 6개, t07~t12 = 조건 B 순서 6개
         </div>
         <div className="mb-6 rounded-lg border border-violet-100 bg-violet-50 px-4 py-3 text-xs text-violet-800">
           메인 ID 고정 규칙: P01~P36은 6명 블록 순서 고정
-          (1-2-3 → 2-1-3 → 1-3-2 → 2-3-1 → 3-1-2 → 3-2-1), 조건만 B/C 균등 배정
+          (1-2-3 → 2-1-3 → 1-3-2 → 2-3-1 → 3-1-2 → 3-2-1), 조건만 A/B 균등 배정
         </div>
 
         <form

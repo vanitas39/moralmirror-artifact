@@ -1,4 +1,4 @@
--- Baseline(C) 참가자 1명의 결과를 JSON으로 내보내기
+-- Baseline(B) 참가자 1명의 결과를 JSON으로 내보내기
 -- 사용법:
 -- 1) 아래 target_participant 값을 원하는 ID로 바꾼다. (예: 't01', 'P12', 'pi03')
 -- 2) Supabase SQL Editor에서 실행한다.
@@ -113,7 +113,7 @@ scenario_json as (
 select jsonb_build_object(
   'exported_at', now(),
   'participant_id', participant_id,
-  'condition', 'C',
+  'condition', 'B',
   'scenarios', scenarios
 ) as export_json
 from scenario_json;

@@ -27,7 +27,7 @@ function normalizeEscapedMarkdown(text) {
 }
 
 function buildBubbleItems(messages, condition, phase) {
-  const isBaseline = condition === "C";
+  const isBaseline = condition === "B";
   return messages.flatMap((msg, msgIdx) => {
     const normalizedContent =
       isBaseline && msg.role === "assistant"
@@ -54,7 +54,7 @@ function buildBubbleItems(messages, condition, phase) {
       ];
     }
 
-    // Phase 2는 조건 B 포함 토론 가독성을 위해 Markdown이 섞여도 문장 분할을 유지한다.
+    // Phase 2는 조건 A 포함 토론 가독성을 위해 Markdown이 섞여도 문장 분할을 유지한다.
     if (phase !== "phase2" && hasMarkdownSyntax(msg.content)) {
       return [
         {

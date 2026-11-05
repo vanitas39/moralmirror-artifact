@@ -38,7 +38,7 @@ export default function ResultPage() {
     const logs = dedupeScenarioLogsById(JSON.parse(stored));
     setScenarioLogs(logs);
     const resultCondition = logs?.[0]?.condition;
-    if (resultCondition !== "C") {
+    if (resultCondition !== "B") {
       fetchReflection(logs);
     }
   }, [router]);
@@ -145,8 +145,8 @@ export default function ResultPage() {
   }
 
   const resultCondition = scenarioLogs?.[0]?.condition;
-  const isBaselineResult = resultCondition === "C";
-  const shouldShowReflection = resultCondition !== "C";
+  const isBaselineResult = resultCondition === "B";
+  const shouldShowReflection = resultCondition !== "B";
 
   return (
     <div className="min-h-screen bg-gray-50">

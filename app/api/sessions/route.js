@@ -145,7 +145,7 @@ export async function POST(req) {
 
     // 2) 각 시나리오별 데이터 저장
     for (const log of savableLogs) {
-      const isBaselineCondition = log.condition === "C";
+      const isBaselineCondition = log.condition === "B";
       // 2a) scenario_responses
       const { data: scenResp, error: scenErr } = await supabase
         .from("scenario_responses")

@@ -6,7 +6,7 @@
 -- ============================================================
 
 -- Participants and their assigned condition.
--- Only conditions 'B' and 'C' were used in the study ('A' is unused; see README).
+-- 'A' = argument challenge (Phases 1-3), 'B' = baseline free conversation.
 CREATE TABLE public.participants (
   id uuid NOT NULL DEFAULT gen_random_uuid(),
   participant_id text NOT NULL,
@@ -16,7 +16,7 @@ CREATE TABLE public.participants (
   scenario_order text DEFAULT '1-2-3'::text,
   CONSTRAINT participants_pkey PRIMARY KEY (id),
   CONSTRAINT participants_participant_id_key UNIQUE (participant_id),
-  CONSTRAINT participants_condition_check CHECK ((condition = ANY (ARRAY['A'::text, 'B'::text, 'C'::text])))
+  CONSTRAINT participants_condition_check CHECK ((condition = ANY (ARRAY['A'::text, 'B'::text])))
 );
 
 -- One row per experiment run of a participant.
@@ -60,7 +60,7 @@ CREATE TABLE public.scenario_responses (
   CONSTRAINT scenario_responses_session_id_scenario_id_key UNIQUE (session_id, scenario_id)
 );
 
--- Chat messages per phase ('baseline' is used for Condition C).
+-- Chat messages per phase ('baseline' is used for Condition B).
 CREATE TABLE public.phase_messages (
   id uuid NOT NULL DEFAULT gen_random_uuid(),
   scenario_response_id uuid,

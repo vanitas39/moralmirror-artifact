@@ -5,7 +5,6 @@ import { useRouter } from "next/navigation";
 import { SCENARIOS, PRACTICE_SCENARIO, ETHICS_FRAMES } from "@/constants/scenarios";
 import {
   buildPhase1Prompt,
-  buildPhase1BPrompt,
   buildPracticePhase1Prompt,
   buildPracticePhase2Prompt,
   buildPracticePhase3Prompt,
@@ -485,7 +484,7 @@ export default function ExperimentPage() {
         if (!res.ok) throw new Error("Failed to load condition");
         const data = await res.json();
         if (!cancelled) {
-          setCondition(["A", "B", "C"].includes(data.condition) ? data.condition : "A");
+          setCondition(["A", "B"].includes(data.condition) ? data.condition : "A");
           setScenarioOrder(
             typeof data.scenarioOrder === "string" && data.scenarioOrder.trim()
               ? data.scenarioOrder
@@ -543,7 +542,7 @@ export default function ExperimentPage() {
     (m) => m.role === "user"
   ).length;
   const phase1RequiredInputCount = 3;
-  const phase1SeedOffset = ["B", "C"].includes(condition) ? 1 : 0;
+  const phase1SeedOffset = 1;
   const phase1ActualUserInputCount = Math.max(0, userMessageCount - phase1SeedOffset);
   const phase2UserCount = state.phase2History.filter(
     (m) => m.role === "user"
@@ -593,9 +592,7 @@ export default function ExperimentPage() {
       return buildPracticePhase1Prompt(state.choice, state.reasoning);
     }
 
-    return condition === "B"
-      ? buildPhase1BPrompt(state.choice, state.reasoning)
-      : buildPhase1Prompt(state.choice, state.reasoning);
+    return buildPhase1Prompt(state.choice, state.reasoning);
   }
 
   function buildCurrentScenarioPartialLog() {
@@ -728,9 +725,9 @@ export default function ExperimentPage() {
     setIsLoading(true);
     try {
       const systemPrompt =
-        condition === "C" ? buildBaselinePrompt() : buildPhase1SystemPrompt();
+        condition === "B" ? buildBaselinePrompt() : buildPhase1SystemPrompt();
       const firstUserContent =
-        condition === "C"
+        condition === "B"
           ? buildBaselineFirstMessage(
               scenario.description,
               state.choice,
@@ -743,7 +740,7 @@ export default function ExperimentPage() {
       const response = await callChat(systemPrompt, [
         { role: "user", content: firstUserContent },
       ], {
-        maxOutputTokens: condition === "C" ? null : 1000,
+        maxOutputTokens: condition === "B" ? null : 1000,
       });
       await typeAssistantResponse("ADD_MESSAGE", "UPDATE_LAST_MESSAGE", response);
     } catch {
@@ -759,7 +756,7 @@ export default function ExperimentPage() {
 
   async function handlePhase1Message(userMessage) {
     const systemPrompt =
-      condition === "C" ? buildBaselinePrompt() : buildPhase1SystemPrompt();
+      condition === "B" ? buildBaselinePrompt() : buildPhase1SystemPrompt();
     const userMsg = stampMessage("user", userMessage);
     dispatch({ type: "ADD_MESSAGE", payload: userMsg });
 
@@ -770,7 +767,7 @@ export default function ExperimentPage() {
         content: m.content,
       }));
       const response = await callChat(systemPrompt, allMessages, {
-        maxOutputTokens: condition === "C" ? null : 1000,
+        maxOutputTokens: condition === "B" ? null : 1000,
       });
       await typeAssistantResponse("ADD_MESSAGE", "UPDATE_LAST_MESSAGE", response);
     } catch {
@@ -1218,7 +1215,7 @@ export default function ExperimentPage() {
 
     const phaseTargetLabel =
       state.phase === "phase1"
-        ? condition === "C"
+        ? condition === "B"
           ? "최종 성찰"
           : "Phase 2"
         : state.phase === "phase2"
@@ -1231,7 +1228,7 @@ export default function ExperimentPage() {
     if (!confirmed) return;
 
     if (state.phase === "phase1") {
-      if (condition === "C") {
+      if (condition === "B") {
         handleEndBaselineConversation();
       } else {
         await handleGoToPhase2();
@@ -1327,7 +1324,7 @@ export default function ExperimentPage() {
             </div>
 
             <div className="bg-white rounded-2xl border border-gray-200 overflow-hidden">
-              {!state.isPractice && condition !== "C" && (
+              {!state.isPractice && condition !== "B" && (
                 <TrolleyAnimation scenarioId={scenario.id} choice={state.choice} />
               )}
               <div className="p-5">
@@ -1419,21 +1416,17 @@ export default function ExperimentPage() {
             <div className="flex items-center justify-between">
               <div>
                 <h2 className="text-lg font-bold text-gray-900">
-                  {condition === "C"
+                  {condition === "B"
                     ? "자유 대화"
-                    : condition === "B"
-                      ? "Phase 1: 논거 공격"
-                      : "Phase 1: 논거 강화"}
+                    : "Phase 1: 논거 공격"}
                 </h2>
                 <p className="text-xs text-gray-500 mt-0.5">
-                  {condition === "C"
+                  {condition === "B"
                     ? "시나리오와 선택 이유를 바탕으로 자유롭게 대화하세요"
-                    : condition === "B"
-                      ? "AI가 당신의 선택을 정면으로 비판하며 핵심 전제를 흔듭니다"
-                      : "AI가 당신의 선택을 함께 옹호하며 주장을 강화합니다"}
+                    : "AI가 당신의 선택을 정면으로 비판하며 핵심 전제를 흔듭니다"}
                 </p>
               </div>
-              {condition !== "C" && <PhaseIndicator currentPhase="phase1" />}
+              {condition !== "B" && <PhaseIndicator currentPhase="phase1" />}
             </div>
 
             <div className="rounded-xl border border-gray-200 bg-gray-50 p-4">
@@ -1451,11 +1444,9 @@ export default function ExperimentPage() {
                 phase="phase1"
                 condition={condition}
                 placeholder={
-                  condition === "C"
+                  condition === "B"
                     ? "시나리오에 대해 자유롭게 생각을 말해보세요..."
-                    : condition === "B"
-                      ? "AI의 반박에 답하며 당신의 입장을 방어해보세요..."
-                      : "당신의 생각을 더 발전시켜보세요..."
+                    : "AI의 반박에 답하며 당신의 입장을 방어해보세요..."
                 }
               />
             </div>
@@ -1470,7 +1461,7 @@ export default function ExperimentPage() {
               </button>
             )}
 
-            {condition === "C" ? (
+            {condition === "B" ? (
               <button
                 onClick={() => handleOpenPhase1Confirm("end_baseline")}
                 disabled={phase1ActualUserInputCount < phase1RequiredInputCount || isLoading}
@@ -1493,7 +1484,7 @@ export default function ExperimentPage() {
         )}
 
         {/* ===== PHASE 2: EXTRACTION & REVERSAL ===== */}
-        {condition !== "C" && state.phase === "phase2" && (
+        {condition !== "B" && state.phase === "phase2" && (
           <div className="space-y-6">
             <div className="flex items-center justify-between">
               <div>
@@ -1565,7 +1556,7 @@ export default function ExperimentPage() {
         )}
 
         {/* ===== PHASE 3: SOCRATIC DECONSTRUCTION ===== */}
-        {condition !== "C" && state.phase === "phase3" && (
+        {condition !== "B" && state.phase === "phase3" && (
           <div className="space-y-6">
             <div className="flex items-center justify-between">
               <div>

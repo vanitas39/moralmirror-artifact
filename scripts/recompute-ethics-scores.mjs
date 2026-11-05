@@ -275,7 +275,7 @@ async function main() {
       else if (m.phase === "baseline") userByPhase.baseline.push(text);
     }
 
-    if (condition === "C" && userByPhase.baseline.length > 0 && userByPhase.phase1.length === 0) {
+    if (condition === "B" && userByPhase.baseline.length > 0 && userByPhase.phase1.length === 0) {
       userByPhase.phase1 = [...userByPhase.baseline];
     }
 
