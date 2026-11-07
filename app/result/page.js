@@ -106,7 +106,6 @@ export default function ResultPage() {
         finalReflection: log.finalReflection,
         ethicsScores: log.ethicsScores,
         ethicsScore: log.ethicsScore,
-        probeMetrics: log.probeMetrics,
         timing: log.timing,
         phase1ExchangeCount: log.phase1ExchangeCount,
         phase2ExchangeCount: log.phase2ExchangeCount,

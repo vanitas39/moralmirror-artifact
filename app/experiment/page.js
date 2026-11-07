@@ -398,50 +398,6 @@ async function computeEthicsScoresFromDiscussion({
   }
 }
 
-function computeProbeMetrics(state) {
-  const p1UserMsgs = state.conversationHistory.filter((m) => m.role === "user");
-  const p2UserMsgs = state.phase2History.filter((m) => m.role === "user");
-  const p3UserMsgs = state.phase3History.filter((m) => m.role === "user");
-  const allUserMsgs = [...p1UserMsgs, ...p2UserMsgs, ...p3UserMsgs];
-
-  return {
-    probeBreadth: null,
-    probeDepth: null,
-    ethicalStanceCount: null,
-    moralTensionCount: null,
-    analogicalReasoningCount: null,
-    feelingCount: null,
-    decisionJustificationCount: null,
-    insightCount: null,
-    alternativePerspectiveCount: null,
-    classifiedUnits: [],
-    reasoningLength: state.reasoning.length,
-    rebuttalLength: (state.selfRebuttal || "").length,
-    phase1UserAvgLength:
-      p1UserMsgs.length > 0
-        ? Math.round(
-            p1UserMsgs.reduce((s, m) => s + m.content.length, 0) /
-              p1UserMsgs.length
-          )
-        : 0,
-    phase2UserAvgLength:
-      p2UserMsgs.length > 0
-        ? Math.round(
-            p2UserMsgs.reduce((s, m) => s + m.content.length, 0) /
-              p2UserMsgs.length
-          )
-        : 0,
-    phase3UserAvgLength:
-      p3UserMsgs.length > 0
-        ? Math.round(
-            p3UserMsgs.reduce((s, m) => s + m.content.length, 0) /
-              p3UserMsgs.length
-          )
-        : 0,
-    totalUserMessages: allUserMsgs.length,
-  };
-}
-
 // ─── Component ───────────────────────────────────────────
 
 export default function ExperimentPage() {
@@ -626,7 +582,6 @@ export default function ExperimentPage() {
       finalReflection: state.finalReflection || null,
       ethicsScores: [],
       ethicsScore: scenario.ethicsMap[state.choice],
-      probeMetrics: computeProbeMetrics(state),
       timing: {
         choiceDurationMs: choiceTimeRef.current
           ? choiceTimeRef.current - scenarioStartRef.current
@@ -1063,7 +1018,6 @@ export default function ExperimentPage() {
 
     const completedAt = new Date().toISOString();
     try {
-      const probeMetrics = computeProbeMetrics(state);
       const effectiveFinalChoice = state.finalChoice || state.choice;
       const ethicsScores = await computeEthicsScoresFromDiscussion({
         scenario,
@@ -1118,7 +1072,6 @@ export default function ExperimentPage() {
         finalReflection: state.finalReflection,
         ethicsScores,
         ethicsScore: scenario.ethicsMap[state.choice],
-        probeMetrics,
         timing,
         phase1ExchangeCount: userMessageCount,
         phase2ExchangeCount: phase2UserCount,

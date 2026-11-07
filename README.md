@@ -23,7 +23,6 @@ Each participant first completes a practice scenario (`id: 0`), then the main sc
 | Use                                                                        | Model                                                       | API                         | Settings                                                                                                             | Code                                  |
 | -------------------------------------------------------------------------- | ----------------------------------------------------------- | --------------------------- | -------------------------------------------------------------------------------------------------------------------- | ------------------------------------- |
 | All dialogue phases, argument extraction, ethics scoring, final reflection | `gpt-5.5-2026-04-23`                                        | OpenAI Responses API        | `reasoning.effort = "low"`; `max_output_tokens = 1000` (Condition A), unset (Condition B), `600` (ethics scoring) | `app/api/chat/route.js`               |
-| Thought-unit aspect classification                                         | `gpt-4o`                                                    | OpenAI Chat Completions API | `temperature = 0`, `max_tokens = 1600`                                                                               | `app/api/probe/route.js`              |
 | Offline ethics re-scoring (post hoc)                                       | `gpt-5.5-2026-04-23` (default; overridable via `ETHICS_RESCORE_MODEL`) | OpenAI Responses API        | `reasoning.effort = "low"`, `max_output_tokens = 600`                                                                | `scripts/recompute-ethics-scores.mjs` |
 
 
@@ -47,7 +46,6 @@ All prompts are defined in `lib/prompts.js`.
 | `buildPracticePhase3Prompt` | Practice scenario — Phase 3                                                                                    | A         | `app/experiment/page.js`                                        |
 | `buildEthicsRescorePrompt`  | End of each scenario — scores ethical frames before/after discussion (JSON); also used for post hoc re-scoring | All       | `app/experiment/page.js`, `scripts/recompute-ethics-scores.mjs` |
 | `buildReflectionPrompt`     | Result page — summary of the participant's dominant ethical frame and changes across scenarios                 | All       | `app/result/page.js`                                            |
-| `buildProbeAspectPrompt`    | Analysis — classifies participant thought units into seven aspects                                             | Analysis  | `app/api/probe/route.js`                                        |
 
 
 
@@ -55,7 +53,7 @@ All prompts are defined in `lib/prompts.js`.
 ## Repository structure
 
 ```
-app/            Next.js pages and API routes (experiment, result, admin, auth, chat, probe, sessions)
+app/            Next.js pages and API routes (experiment, result, admin, auth, chat, sessions)
 components/     UI components (chat, phase indicator, radar chart, argument cards, ...)
 constants/      Scenario texts (scenarios.js)
 lib/            LLM prompts (prompts.js) and Supabase clients

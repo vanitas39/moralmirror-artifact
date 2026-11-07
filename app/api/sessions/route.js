@@ -2,45 +2,6 @@ import { createServerClient } from "@supabase/ssr";
 import { cookies } from "next/headers";
 import { NextResponse } from "next/server";
 
-function splitIntoSentenceUnits(text) {
-  return String(text || "")
-    .split(/\n|(?<=[.!?])\s+|(?<=다\.)\s+/)
-    .map((s) => s.trim())
-    .filter(Boolean);
-}
-
-function buildRawUnits(log) {
-  const sources = [
-    { source: "initial_reasoning", content: log.initialReasoning },
-    ...((log.phase1Log || [])
-      .filter((m) => m.role === "user")
-      .map((m, i) => ({ source: `phase1_${i}`, content: m.content }))),
-    ...((log.phase2Log || [])
-      .filter((m) => m.role === "user")
-      .map((m, i) => ({ source: `phase2_${i}`, content: m.content }))),
-    ...((log.phase3Log || [])
-      .filter((m) => m.role === "user")
-      .map((m, i) => ({ source: `phase3_${i}`, content: m.content }))),
-    { source: "final_reflection", content: log.finalReflection },
-  ];
-
-  const units = [];
-  let idx = 0;
-  sources.forEach((entry, sourceIdx) => {
-    const parts = splitIntoSentenceUnits(entry.content);
-    parts.forEach((text, sentenceIdx) => {
-      units.push({
-        source: entry.source,
-        unit_id: `s${sourceIdx}_u${sentenceIdx}`,
-        unit_index: idx,
-        text_unit: text,
-      });
-      idx += 1;
-    });
-  });
-  return units;
-}
-
 export async function POST(req) {
   try {
     const cookieStore = await cookies();
@@ -243,46 +204,6 @@ export async function POST(req) {
           delta: s.delta,
         }));
         await supabase.from("ethics_scores").insert(scores);
-      }
-
-      // 2g) probe_metrics
-      if (log.probeMetrics) {
-        const pm = log.probeMetrics;
-        await supabase.from("probe_metrics").insert({
-          scenario_response_id: responseId,
-          probe_breadth: pm.probeBreadth,
-          probe_depth: pm.probeDepth,
-          ethical_stance_count: pm.ethicalStanceCount,
-          moral_tension_count: pm.moralTensionCount,
-          analogical_reasoning_count: pm.analogicalReasoningCount,
-          feeling_count: pm.feelingCount,
-          decision_justification_count: pm.decisionJustificationCount,
-          insight_count: pm.insightCount,
-          alternative_perspective_count: pm.alternativePerspectiveCount,
-          reasoning_length: pm.reasoningLength,
-          rebuttal_length: pm.rebuttalLength,
-          phase1_user_avg_length: pm.phase1UserAvgLength,
-          phase2_user_avg_length: pm.phase2UserAvgLength,
-          phase3_user_avg_length: pm.phase3UserAvgLength,
-          total_user_messages: pm.totalUserMessages,
-        });
-      }
-
-      // 2h) probe_thought_units (문장 단위 raw 저장, 라벨은 이후 코딩)
-      const rawUnits = buildRawUnits(log);
-      if (rawUnits.length > 0) {
-        await supabase.from("probe_thought_units").insert(
-          rawUnits.map((u) => ({
-            scenario_response_id: responseId,
-            source: u.source,
-            unit_id: u.unit_id,
-            unit_index: u.unit_index,
-            text_unit: u.text_unit,
-            aspect: null,
-            is_elaborated: null,
-            confidence: null,
-          }))
-        );
       }
     }
 

@@ -101,50 +101,6 @@ CREATE TABLE public.ethics_scores (
   CONSTRAINT ethics_scores_scenario_response_id_frame_key UNIQUE (scenario_response_id, frame)
 );
 
--- Per-scenario reasoning metrics (aspect counts, breadth/depth, message lengths).
-CREATE TABLE public.probe_metrics (
-  id uuid NOT NULL DEFAULT gen_random_uuid(),
-  scenario_response_id uuid,
-  breadth integer,
-  depth real,
-  reasoning_length integer,
-  rebuttal_length integer,
-  phase1_user_avg_length real,
-  phase3_user_avg_length real,
-  total_user_messages integer,
-  created_at timestamp with time zone DEFAULT now(),
-  phase2_user_avg_length real,
-  probe_breadth integer,
-  probe_depth real,
-  ethical_stance_count integer DEFAULT 0,
-  moral_tension_count integer DEFAULT 0,
-  analogical_reasoning_count integer DEFAULT 0,
-  feeling_count integer DEFAULT 0,
-  decision_justification_count integer DEFAULT 0,
-  insight_count integer DEFAULT 0,
-  alternative_perspective_count integer DEFAULT 0,
-  CONSTRAINT probe_metrics_pkey PRIMARY KEY (id),
-  CONSTRAINT probe_metrics_scenario_response_id_fkey FOREIGN KEY (scenario_response_id) REFERENCES public.scenario_responses(id) ON DELETE CASCADE,
-  CONSTRAINT probe_metrics_scenario_response_id_key UNIQUE (scenario_response_id)
-);
-
--- Participant text split into thought units and classified into aspects.
-CREATE TABLE public.probe_thought_units (
-  id uuid NOT NULL DEFAULT gen_random_uuid(),
-  scenario_response_id uuid,
-  source text NOT NULL,
-  unit_id text NOT NULL,
-  unit_index integer NOT NULL,
-  text_unit text NOT NULL,
-  aspect text,
-  is_elaborated boolean,
-  confidence real,
-  created_at timestamp with time zone DEFAULT now(),
-  CONSTRAINT probe_thought_units_pkey PRIMARY KEY (id),
-  CONSTRAINT probe_thought_units_scenario_response_id_fkey FOREIGN KEY (scenario_response_id) REFERENCES public.scenario_responses(id) ON DELETE CASCADE
-);
-
 -- Indexes
 CREATE INDEX idx_ethics_scores_response ON public.ethics_scores USING btree (scenario_response_id);
 CREATE INDEX idx_phase_messages_response ON public.phase_messages USING btree (scenario_response_id, phase, message_order);
-CREATE INDEX idx_probe_units_response ON public.probe_thought_units USING btree (scenario_response_id, unit_index);
